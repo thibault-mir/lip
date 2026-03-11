@@ -55,8 +55,8 @@ class _SetupScreenState extends State<SetupScreen> {
       // --- LE FIX POUR LE WEB ---
       String finalUrl = url;
       if (kIsWeb) {
-        // On utilise un proxy public pour contourner le CORS et le Mixed Content (HTTP/HTTPS)
-        finalUrl = "https://corsproxy.io/?" + Uri.encodeComponent(url);
+        // On appelle notre propre fonction Vercel
+        finalUrl = "/api/proxy?url=" + Uri.encodeComponent(url);
       }
       // --------------------------
 
