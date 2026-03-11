@@ -312,6 +312,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Proxy web pour éviter les erreurs CORS
+  static String _proxyUrl(String url) {
+    if (kIsWeb) return '/api/proxy?url=${Uri.encodeComponent(url)}';
+    return url;
+  }
+
   Future<void> _loadChannels() async {
     setState(() => _loading = true);
     try {
@@ -331,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
             password: password,
           );
           final response = await Dio().get(
-            url,
+            _proxyUrl(url),
             options: Options(responseType: ResponseType.plain),
           );
           content = response.data.toString();
@@ -340,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final url = await StorageService.getM3uUrl();
         if (url != null && url.isNotEmpty) {
           final response = await Dio().get(
-            url,
+            _proxyUrl(url),
             options: Options(responseType: ResponseType.plain),
           );
           content = response.data.toString();
