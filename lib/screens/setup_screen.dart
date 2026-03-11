@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../services/storage_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -32,6 +33,7 @@ class _SetupScreenState extends State<SetupScreen> {
         url = _urlController.text.trim();
         if (url.isEmpty) {
           setState(() => _error = 'Entre une URL valide');
+          _loading = false; // Ne pas oublier de reset le loading
           return;
         }
       } else {
@@ -40,6 +42,7 @@ class _SetupScreenState extends State<SetupScreen> {
         final password = _passwordController.text.trim();
         if (host.isEmpty || username.isEmpty || password.isEmpty) {
           setState(() => _error = 'Remplis tous les champs');
+          _loading = false;
           return;
         }
         url = StorageService.buildXtreamUrl(
@@ -49,17 +52,26 @@ class _SetupScreenState extends State<SetupScreen> {
         );
       }
 
-      // Valide l'URL
+      // --- LE FIX POUR LE WEB ---
+      String finalUrl = url;
+      if (kIsWeb) {
+        // On utilise un proxy public pour contourner le CORS et le Mixed Content (HTTP/HTTPS)
+        finalUrl = "https://corsproxy.io/?" + Uri.encodeComponent(url);
+      }
+      // --------------------------
+
       final dio = Dio();
       final response = await dio.get(
-        url,
+        finalUrl, // On utilise l'URL potentiellement modifiée
         options: Options(responseType: ResponseType.plain),
       );
 
       if (response.data.toString().contains('#EXTM3U')) {
         await StorageService.saveMode(_mode);
         if (_mode == 'url') {
-          await StorageService.saveM3uUrl(url);
+          await StorageService.saveM3uUrl(
+            url,
+          ); // On sauvegarde l'URL d'origine (pas le proxy)
         } else {
           await StorageService.saveXtreamCredentials(
             host: _hostController.text.trim(),
@@ -74,9 +86,13 @@ class _SetupScreenState extends State<SetupScreen> {
         setState(() => _error = 'URL invalide — fichier M3U non détecté');
       }
     } catch (e) {
-      setState(() => _error = 'Impossible de charger cette URL');
+      // Pour debug, tu peux afficher l'erreur réelle dans la console
+      print("Erreur de chargement: $e");
+      setState(
+        () => _error = 'Impossible de charger cette URL (CORS ou Réseau)',
+      );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
