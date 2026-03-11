@@ -51,6 +51,10 @@ export default function handler(req, res) {
       Accept: "*/*",
     },
     timeout: REQUEST_TIMEOUT_MS,
+    // Les serveurs IPTV ont souvent des certs auto-signés ou expirés.
+    // Le proxy tourne côté Vercel (serveur), pas dans le navigateur —
+    // désactiver la vérif SSL ici ne présente pas de risque pour l'utilisateur.
+    rejectUnauthorized: false,
   };
 
   const proxyReq = client.request(options, (remoteRes) => {
