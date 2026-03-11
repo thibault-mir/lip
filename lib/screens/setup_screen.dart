@@ -66,6 +66,10 @@ class _SetupScreenState extends State<SetupScreen> {
         options: Options(responseType: ResponseType.plain),
       );
 
+      // AJOUTE ÇA ICI :
+      print("STATUS: ${response.statusCode}");
+      print("DATA PREVIEW: ${response.data.toString().substring(0, 100)}");
+
       if (response.data.toString().contains('#EXTM3U')) {
         await StorageService.saveMode(_mode);
         if (_mode == 'url') {
