@@ -1,15 +1,31 @@
-const axios = require("axios");
+const https = require("https");
+const http = require("http");
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   const { url } = req.query;
-  if (!url) return res.status(400).send("No URL provided");
 
-  try {
-    const response = await axios.get(url, { responseType: "arraybuffer" });
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", response.headers["content-type"]);
-    res.send(response.data);
-  } catch (error) {
-    res.status(500).send("Error fetching M3U");
+  if (!url) {
+    return res.status(400).send("No URL provided");
   }
+
+  // On choisit le bon module selon le protocole (http ou https)
+  const client = url.startsWith("https") ? https : http;
+
+  client
+    .get(url, (remoteRes) => {
+      // On propage les headers de sécurité pour le navigateur
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET");
+      res.setHeader(
+        "Content-Type",
+        remoteRes.headers["content-type"] || "text/plain",
+      );
+
+      // On renvoie le flux directement
+      remoteRes.pipe(res);
+    })
+    .on("error", (err) => {
+      console.error(err);
+      res.status(500).send("Proxy Error: " + err.message);
+    });
 }
